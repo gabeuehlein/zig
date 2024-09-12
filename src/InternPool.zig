@@ -9236,7 +9236,10 @@ pub const WipEnumType = struct {
     }
 
     pub fn setTagTy(wip: WipEnumType, ip: *InternPool, tag_ty: Index) void {
-        assert(ip.isIntegerType(tag_ty));
+        assert(ip.isIntegerType(tag_ty) or ip.isNoReturn(tag_ty));
+        if (std.debug.runtime_safety)
+            if (ip.isNoReturn(tag_ty))
+                assert(wip.names_map.get(ip).count() == 0);
         const extra = ip.getLocalShared(wip.tid).extra.acquire();
         extra.view().items(.@"0")[wip.tag_ty_index] = @intFromEnum(tag_ty);
     }
