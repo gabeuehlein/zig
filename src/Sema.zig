@@ -39017,15 +39017,15 @@ pub fn resolveDeclaredEnum(
             // noreturn -> special case; only uninstantiable enums may have this tag type
             if (tag_type == .noreturn) {
                 if (fields_len != 0)
-                    return sema.fail(&block, tag_ty_src, "only uninstantiable enums may have a tag type of noreturn", .{});
+                    return sema.fail(&block, tag_ty_src, "only ordinarily uninstantiable enums may have a tag type of noreturn", .{});
             } else if (tag_type != .int and tag_type != .comptime_int) {
                 return sema.fail(&block, tag_ty_src, "expected integer or noreturn tag type, found '{}'", .{ty.fmt(pt)});
-            } else if (fields_len == 0) {
-                return sema.fail(&block, tag_ty_src, "uninstantiable enum may not have an integer tag type", .{});
+            } else if (!small.nonexhaustive and fields_len == 0) {
+                return sema.fail(&block, tag_ty_src, "empty exhaustive enum may not have an integer tag type", .{});
             }
             break :ty ty;
-        } else if (fields_len == 0) {
-            return sema.fail(&block, tag_ty_src, "uninstantiable enums must have an explicit tag type of noreturn", .{});
+        } else if (!small.nonexhaustive and fields_len == 0) {
+            return sema.fail(&block, tag_ty_src, "uninstantiable exhaustive enum must have an explicit tag type of noreturn", .{});
         } else {
             const bits = std.math.log2_int_ceil(usize, fields_len);
             break :ty try pt.intType(.unsigned, bits);
