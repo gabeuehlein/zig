@@ -39012,12 +39012,20 @@ pub fn resolveDeclaredEnum(
 
         if (tag_type_ref != .none) {
             const ty = try sema.resolveType(&block, tag_ty_src, tag_type_ref);
-            if (ty.zigTypeTag(zcu) != .int and ty.zigTypeTag(zcu) != .comptime_int) {
-                return sema.fail(&block, tag_ty_src, "expected integer tag type, found '{}'", .{ty.fmt(pt)});
+            const tag_type = ty.zigTypeTag(zcu);
+            // int, comptime_int -> "normal" enum tags
+            // noreturn -> special case; only uninstantiable enums may have this tag type
+            if (tag_type == .noreturn) {
+                if (fields_len != 0)
+                    return sema.fail(&block, tag_ty_src, "only uninstantiable enums may have a tag type of noreturn", .{});
+            } else if (tag_type != .int and tag_type != .comptime_int) {
+                return sema.fail(&block, tag_ty_src, "expected integer or noreturn tag type, found '{}'", .{ty.fmt(pt)});
+            } else if (fields_len == 0) {
+                return sema.fail(&block, tag_ty_src, "uninstantiable enum may not have an integer tag type", .{});
             }
             break :ty ty;
         } else if (fields_len == 0) {
-            break :ty try pt.intType(.unsigned, 0);
+            return sema.fail(&block, tag_ty_src, "uninstantiable enums must have an explicit tag type of noreturn", .{});
         } else {
             const bits = std.math.log2_int_ceil(usize, fields_len);
             break :ty try pt.intType(.unsigned, bits);
