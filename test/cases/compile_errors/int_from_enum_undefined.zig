@@ -3,11 +3,11 @@ export fn a() void {
     var e: E = undefined;
     _ = &e;
     _ = @intFromEnum(e);
+    // :2:15: note: enum declared here
 }
 
 // error
 // backend=stage2
 // target=native
 //
-// :5:22: error: cannot use @intFromEnum on empty enum 'tmp.a.E'
-// :2:15: note: enum declared here
+// :2:15: error: uninstantiable exhaustive enum must have an explicit tag type of noreturn

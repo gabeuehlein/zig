@@ -1,4 +1,4 @@
-fn entry() void {
+comptime {
     const E = enum(noreturn) {};
     const e = @as(*E, undefined);
     _ = e.*;

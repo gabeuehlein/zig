@@ -13,4 +13,4 @@ export fn entry() void {
 // backend=stage2
 // target=native
 //
-// :1:20: error: expected integer tag type, found 'f32'
+// :1:20: error: expected integer or noreturn tag type, found 'f32'

@@ -5392,7 +5392,7 @@ fn zirValidateDeref(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileErr
             .explicit, .nonexhaustive => if (enum_type.tag_ty == .noreturn_type) {
                 return sema.fail(block, src, "cannot dereference enum with a tag type of noreturn", .{});
             },
-            .auto => {} // will be handled farther down
+            .auto => {}, // will be handled farther down
         }
     }
 
@@ -22529,8 +22529,9 @@ fn reifyEnum(
     var done = false;
     errdefer if (!done) wip_ty.cancel(ip, pt.tid);
 
-    if (tag_ty.zigTypeTag(zcu) != .int) {
-        return sema.fail(block, src, "Type.Enum.tag_type must be an integer type", .{});
+    switch (tag_ty.zigTypeTag(zcu)) {
+        .int, .noreturn => {},
+        else => return sema.fail(block, src, "Type.Enum.tag_type must be an integer type", .{}),
     }
 
     wip_ty.setName(ip, try sema.createTypeName(
