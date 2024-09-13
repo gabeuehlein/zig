@@ -1401,6 +1401,12 @@ pub const SrcLoc = struct {
                             tree.nodes.items(.main_token)[full.ast.arg],
                         );
                     },
+                    .container_decl_two, .container_decl_two_trailing => {
+                        var buf = @as([2]Ast.Node.Index, undefined);
+                        const full = tree.containerDeclTwo(&buf, parent_node);
+
+                        return tree.tokenToSpan(full.ast.main_token);
+                    },
                     else => unreachable,
                 }
             },

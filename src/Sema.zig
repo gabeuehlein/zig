@@ -5384,6 +5384,18 @@ fn zirValidateDeref(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileErr
         .Slice => return sema.fail(block, src, "index syntax required for slice type '{}'", .{operand_ty.fmt(pt)}),
     }
 
+    // TODO expand this logic to cover other noreturn-like types,
+    // see https://github.com/ziglang/zig/issues/19855
+    if (operand_ty.childType(zcu).zigTypeTag(zcu) == .@"enum") {
+        const enum_type = zcu.intern_pool.loadEnumType(operand_ty.childType(zcu).toIntern());
+        switch (enum_type.tag_mode) {
+            .explicit, .nonexhaustive => if (enum_type.tag_ty == .noreturn_type) {
+                return sema.fail(block, src, "cannot dereference enum with a tag type of noreturn", .{});
+            },
+            .auto => {} // will be handled farther down
+        }
+    }
+
     if ((try sema.typeHasOnePossibleValue(operand_ty.childType(zcu))) != null) {
         // No need to validate the actual pointer value, we don't need it!
         return;
