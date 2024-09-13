@@ -529,7 +529,7 @@ pub fn FieldEnum(comptime T: type) type {
     if (field_infos.len == 0) {
         return @Type(.{
             .@"enum" = .{
-                .tag_type = u0,
+                .tag_type = noreturn,
                 .fields = &.{},
                 .decls = &.{},
                 .is_exhaustive = true,
