@@ -3,14 +3,7 @@ const std = @import("std");
 const expect = std.testing.expect;
 
 test "switch on empty enum" {
-    const E = enum {};
-    var e: E = undefined;
-    _ = &e;
-    switch (e) {}
-}
-
-test "switch on empty enum with a specified tag type" {
-    const E = enum(u8) {};
+    const E = enum(noreturn) {};
     var e: E = undefined;
     _ = &e;
     switch (e) {}
@@ -28,7 +21,7 @@ test "switch on empty auto numbered tagged union" {
 test "switch on empty tagged union" {
     if (builtin.zig_backend == .stage2_arm) return error.SkipZigTest; // TODO
 
-    const E = enum {};
+    const E = enum(noreturn) {};
     const U = union(E) {};
     var u: U = undefined;
     _ = &u;
@@ -57,7 +50,7 @@ test "empty union passed as argument" {
 }
 
 test "empty enum passed as argument" {
-    const E = enum {
+    const E = enum(noreturn) {
         fn f(e: @This()) void {
             switch (e) {}
         }

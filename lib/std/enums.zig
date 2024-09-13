@@ -1229,7 +1229,7 @@ test "pure EnumSet fns" {
 }
 
 test "EnumSet empty" {
-    const E = enum {};
+    const E = enum(noreturn) {};
     const empty = EnumSet(E).initEmpty();
     const full = EnumSet(E).initFull();
 
@@ -1490,7 +1490,7 @@ test "EnumIndexer sparse" {
 }
 
 test "EnumIndexer empty" {
-    const E = enum {};
+    const E = enum(noreturn) {};
     const Indexer = EnumIndexer(E);
     try testing.expectEqual(E, Indexer.Key);
     try testing.expectEqual(0, Indexer.count);

@@ -602,7 +602,7 @@ fn expectEqualEnum(expected: anytype, actual: @TypeOf(expected)) !void {
 }
 
 test FieldEnum {
-    try expectEqualEnum(enum {}, FieldEnum(struct {}));
+    try expectEqualEnum(enum(noreturn) {}, FieldEnum(struct {}));
     try expectEqualEnum(enum { a }, FieldEnum(struct { a: u8 }));
     try expectEqualEnum(enum { a, b, c }, FieldEnum(struct { a: u8, b: void, c: f32 }));
     try expectEqualEnum(enum { a, b, c }, FieldEnum(union { a: u8, b: void, c: f32 }));

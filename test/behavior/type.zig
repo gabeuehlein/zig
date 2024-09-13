@@ -484,7 +484,7 @@ test "Type.Union from regular enum" {
 }
 
 test "Type.Union from empty regular enum" {
-    const E = enum {};
+    const E = enum(noreturn) {};
     const U = @Type(.{
         .@"union" = .{
             .layout = .auto,
