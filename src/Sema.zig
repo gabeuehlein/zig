@@ -1319,6 +1319,7 @@ fn analyzeBodyInner(
                     .work_group_id      => try sema.zirWorkItem(          block, extended, extended.opcode),
                     .in_comptime        => try sema.zirInComptime(        block),
                     .closure_get        => try sema.zirClosureGet(        block, extended),
+                    .compile_error_ext  => return sema.zirCompileErrorExt(block, extended),
                     // zig fmt: on
 
                     .fence => {
@@ -5784,6 +5785,69 @@ fn zirCompileError(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileErro
         .needed_comptime_reason = "compile error string must be comptime-known",
     });
     return sema.fail(block, src, "{s}", .{msg});
+}
+
+fn zirCompileErrorExt(sema: *Sema, block: *Block, extended: Zir.Inst.Extended.InstData) CompileError!void {
+    const tracy = trace(@src());
+    defer tracy.end();
+
+    const pt = sema.pt;
+    const zcu = pt.zcu;
+    const ip = zcu.intern_pool;
+
+    const extra = sema.code.extraData(Zir.Inst.BinNode, extended.operand);
+    const inst_data = extra.data;
+    const src = block.nodeOffset(inst_data.node);
+    const msg_src = block.builtinCallArgSrc(inst_data.node, 0);
+    const notes_src = block.builtinCallArgSrc(inst_data.node, 1);
+    const msg_inst = try sema.resolveInst(inst_data.lhs);
+    const notes_inst = try sema.resolveInst(inst_data.rhs);
+
+    const err_msg = try sema.toConstString(block, msg_src, msg_inst, .{
+        .needed_comptime_reason = "compile error string must be comptime-known",
+    });
+
+    const expected_notes_ty = try pt.ptrTypeSema(.{
+        .child = .slice_const_u8_type,
+        .flags = .{
+            .is_const = true,
+            .size = .Slice
+        }
+    });
+
+    const notes_base = try sema.coerce(block, expected_notes_ty, notes_inst, notes_src);
+    const notes = try sema.resolveConstDefinedValue(block, notes_src, notes_base, .{
+        .needed_comptime_reason = "compile error notes must be comptime-known",
+    });
+
+
+    return sema.failWithOwnedErrorMsg(block, msg: {
+        const msg = try sema.errMsg(src, "{s}", .{err_msg});
+        errdefer msg.destroy(sema.arena);
+        // NOTE: I'm don't know enough about the compiler internals
+        // to know if this can explode or not, so it probably
+        // shouldn't stay if @compileErrorExt becomes an actual feature
+        switch (ip.indexToKey(notes.toIntern())) {
+            .slice => |outer_slice| {
+                const slice_key = ip.indexToKey(outer_slice.ptr).ptr;
+                const slice_agg = ip.indexToKey(slice_key.base_addr.uav.val).aggregate;
+                const val = Value.fromInterned(slice_key.base_addr.uav.val);
+                const agg_len = Type.fromInterned(slice_agg.ty).arrayLen(zcu);
+                for (0..agg_len) |i| {
+                    const itm_key = ip.indexToKey((try val.fieldValue(pt, i)).toIntern()).slice;
+                    const key = ip.indexToKey(itm_key.ptr).ptr.base_addr.uav.val;
+                    const agg = ip.indexToKey(key).aggregate;
+                    const len = Type.fromInterned(agg.ty).arrayLenIncludingSentinel(zcu);
+                    const bytes = agg.storage.bytes;
+                    const slice = bytes.toSlice(if (bytes.at(len - 1, &ip) == 0) len - 1 else len, &ip);
+                    try sema.errNote(src, msg, "{s}", .{slice});
+                }
+            },
+            else => unreachable,
+        }
+
+        break :msg msg;
+    });
 }
 
 fn zirCompileLog(

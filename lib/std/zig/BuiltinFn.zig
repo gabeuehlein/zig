@@ -29,6 +29,7 @@ pub const Tag = enum {
     cmpxchg_strong,
     cmpxchg_weak,
     compile_error,
+    compile_error_ext,
     compile_log,
     const_cast,
     ctz,
@@ -364,6 +365,13 @@ pub const list = list: {
             .{
                 .tag = .compile_error,
                 .param_count = 1,
+            },
+        },
+        .{
+            "@compileErrorExt",
+            .{
+                .tag = .compile_error_ext,
+                .param_count = 2,
             },
         },
         .{

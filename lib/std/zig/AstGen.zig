@@ -2905,6 +2905,7 @@ fn addEnsureResult(gz: *GenZir, maybe_unused_result: Zir.Inst.Ref, statement: As
                 .set_float_mode,
                 .set_align_stack,
                 .branch_hint,
+                .compile_error_ext,
                 => break :b true,
                 else => break :b false,
             },
@@ -9261,6 +9262,15 @@ fn builtinCall(
             }
             const result = try gz.addExtendedMultiOpPayloadIndex(.compile_log, payload_index, params.len);
             return rvalue(gz, ri, result, node);
+        },
+        .compile_error_ext => {
+            const lhs = try comptimeExpr(gz, scope, ri, params[0]);
+            const rhs = try comptimeExpr(gz, scope, ri, params[1]);
+            return gz.addExtendedPayload(.compile_error_ext, Zir.Inst.BinNode{
+                .lhs = lhs,
+                .rhs = rhs,
+                .node = gz.nodeIndexToRelative(node),
+            });
         },
         .field => {
             if (ri.rl == .ref or ri.rl == .ref_coerced_ty) {

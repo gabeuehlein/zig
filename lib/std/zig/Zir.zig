@@ -1929,6 +1929,11 @@ pub const Inst = struct {
         /// The `asm_source` field of the Asm is not a null-terminated string
         /// but instead a Ref.
         asm_expr,
+        /// Emit an error message along with a user-provided set
+        /// of notes.
+        /// `operand` is the payload index to `BinNode`.
+        /// `small` is unused.
+        compile_error_ext,
         /// Log compile time variables and emit an error message.
         /// `operand` is payload index to `NodeMultiOp`.
         /// `small` is `operands_len`.
@@ -4001,6 +4006,7 @@ fn findDeclsInner(
                 .builtin_extern,
                 .@"asm",
                 .asm_expr,
+                .compile_error_ext,
                 .compile_log,
                 .min_multi,
                 .max_multi,

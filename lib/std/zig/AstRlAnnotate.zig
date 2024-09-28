@@ -896,6 +896,7 @@ fn builtinCall(astrl: *AstRlAnnotate, block: ?*Block, ri: ResultInfo, node: Ast.
         .bit_size_of,
         .align_of,
         .compile_error,
+        .compile_error_ext,
         .set_eval_branch_quota,
         .int_from_bool,
         .int_from_error,
