@@ -30346,8 +30346,6 @@ fn coerceExtra(
         else => {},
     }
 
-    if (!opts.report_err) return error.NotCoercible;
-
     if (opts.is_ret and dest_ty.zigTypeTag(zcu) == .noreturn) {
         const msg = msg: {
             const msg = try sema.errMsg(inst_src, "function declared 'noreturn' returns", .{});
@@ -30367,6 +30365,8 @@ fn coerceExtra(
     // special logic has a chance to run first, such as `*[N]T` to `[]T` which
     // should initialize the length field of the slice.
     if (maybe_inst_val) |val| if (val.toIntern() == .undef) return pt.undefRef(dest_ty);
+
+    if (!opts.report_err) return error.NotCoercible;
 
     const msg = msg: {
         const msg = try sema.errMsg(inst_src, "expected type '{}', found '{}'", .{ dest_ty.fmt(pt), inst_ty.fmt(pt) });
