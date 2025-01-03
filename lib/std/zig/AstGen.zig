@@ -70,6 +70,11 @@ ref_table: std.AutoHashMapUnmanaged(Zir.Inst.Index, Zir.Inst.Index) = .empty,
 /// data should be used to update this hasher. The result is the final source
 /// hash of the enclosing declaration/etc.
 src_hasher: std.zig.SrcHasher,
+/// Refers to the AST node of any explicit type annotation/cast (e.g. `var foo: <type> = ...`
+/// or `@as(<type>, ...)`). This is an ephemeral variable - it should be set by any caller that may
+/// expect a later branch/function call to use the type's AST node and should be restored to its original
+/// value when the function returns.
+type_annotation_node: Ast.Node.Index = 0,
 
 const InnerError = error{ OutOfMemory, AnalysisFail };
 
@@ -3216,6 +3221,10 @@ fn varDecl(
         if (token_tags[var_decl.ast.mut_token] == .keyword_const) .@"local constant" else .@"local variable",
     );
 
+    const old_annotation_node = astgen.type_annotation_node;
+    astgen.type_annotation_node = var_decl.ast.type_node;
+    defer astgen.type_annotation_node = old_annotation_node;
+
     if (var_decl.ast.init_node == 0) {
         return astgen.failNode(node, "variables must be initialized", .{});
     }
@@ -5673,6 +5682,7 @@ fn containerDecl(
                 .declaring_gz = gz,
                 .maybe_generic = astgen.within_fn,
             };
+
             defer namespace.deinit(gpa);
 
             // The enum_decl instruction introduces a scope in which the decls of the enum
@@ -8960,6 +8970,9 @@ fn as(
     lhs: Ast.Node.Index,
     rhs: Ast.Node.Index,
 ) InnerError!Zir.Inst.Ref {
+    const old_annotation_node = gz.astgen.type_annotation_node;
+    gz.astgen.type_annotation_node = lhs;
+    defer gz.astgen.type_annotation_node = old_annotation_node;
     const dest_type = try typeExpr(gz, scope, lhs);
     const result = try reachableExpr(gz, scope, .{ .rl = .{ .ty = dest_type } }, rhs, node);
     return rvalue(gz, ri, result, node);
@@ -9590,8 +9603,9 @@ fn builtinCall(
         },
 
         .splat => {
+            const type_node = gz.astgen.type_annotation_node;
             const result_type = try ri.rl.resultTypeForCast(gz, node, builtin_name);
-            const elem_type = try gz.addUnNode(.vec_arr_elem_type, result_type, node);
+            const elem_type = try gz.addUnNode(.vec_arr_elem_type, result_type, type_node);
             const scalar = try expr(gz, scope, .{ .rl = .{ .ty = elem_type } }, params[0]);
             const result = try gz.addPlNode(.splat, node, Zir.Inst.Bin{
                 .lhs = result_type,

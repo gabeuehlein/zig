@@ -8602,7 +8602,8 @@ fn zirVecArrElemType(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileEr
     const pt = sema.pt;
     const zcu = pt.zcu;
     const un_node = sema.code.instructions.items(.data)[@intFromEnum(inst)].un_node;
-    const vec_ty = sema.resolveType(block, LazySrcLoc.unneeded, un_node.operand) catch |err| switch (err) {
+    const src = block.nodeOffset(un_node.src_node);
+    const vec_ty = sema.resolveType(block, src, un_node.operand) catch |err| switch (err) {
         // Since this is a ZIR instruction that returns a type, encountering
         // generic poison should not result in a failed compilation, but the
         // generic poison type. This prevents unnecessary failures when
